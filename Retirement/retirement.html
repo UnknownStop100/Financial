@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retirement Calculator</title>
+    <link rel="stylesheet" href="../common.css">
+    <style>
+        .sidebar h1 { font-size: 1.3em; color: #667eea; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="nav-header">
+        <div>
+            <div class="page-title">Retirement Calculator</div>
+            <div class="page-subtitle">Plan your retirement savings</div>
+        </div>
+        <a href="../main.html" class="back-btn">← Back to Calculators</a>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h1>Retirement Plan</h1>
+            <form id="retirementForm">
+                <div class="input-group">
+                    <label for="currentAge">Current Age:</label>
+                    <input type="number" id="currentAge" value="35">
+                </div>
+                <div class="input-group">
+                    <label for="retirementAge">Retirement Age:</label>
+                    <input type="number" id="retirementAge" value="65">
+                </div>
+                <div class="input-group">
+                    <label for="currentSavings">Current Savings ($):</label>
+                    <input type="number" id="currentSavings" step="0.01" value="50000">
+                </div>
+                <div class="input-group">
+                    <label for="annualSavings">Annual Savings ($):</label>
+                    <input type="number" id="annualSavings" step="0.01" value="15000">
+                </div>
+                <div class="input-group">
+                    <label for="returnRate">Expected Annual Return (%):</label>
+                    <input type="number" id="returnRate" step="0.01" value="7">
+                </div>
+                <div class="input-group">
+                    <label for="lifeExpectancy">Life Expectancy:</label>
+                    <input type="number" id="lifeExpectancy" value="90">
+                </div>
+                <div class="input-group">
+                    <label for="inflationRate">Inflation Rate (%):</label>
+                    <input type="number" id="inflationRate" step="0.01" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="annualExpense">Annual Retirement Expense ($):</label>
+                    <input type="number" id="annualExpense" step="0.01" value="75000">
+                </div>
+            </form>
+        </div>
+
+        <div class="main">
+            <canvas id="retirementChart" width="600" height="300"></canvas>
+            <div id="results" class="results hidden">
+                <h2>Retirement Plan Summary</h2>
+                <div class="result-item">
+                    <span class="label">Years Until Retirement:</span>
+                    <span class="value"><span id="yearsToRetire">0</span> years</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Retirement Savings Target:</span>
+                    <span class="value">$<span id="savingsTarget">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Projected Savings at Retirement:</span>
+                    <span class="value">$<span id="projectedSavings">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Surplus / Deficit:</span>
+                    <span class="value">$<span id="surplus">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Retirement Duration:</span>
+                    <span class="value"><span id="duration">0</span> years</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateRetirement() {
+            const currentAge = parseFloat(document.getElementById('currentAge').value) || 0;
+            const retirementAge = parseFloat(document.getElementById('retirementAge').value) || 65;
+            const currentSavings = parseFloat(document.getElementById('currentSavings').value) || 0;
+            const annualSavings = parseFloat(document.getElementById('annualSavings').value) || 0;
+            const returnRate = parseFloat(document.getElementById('returnRate').value) / 100;
+            const lifeExpectancy = parseFloat(document.getElementById('lifeExpectancy').value) || 90;
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100;
+            const annualExpense = parseFloat(document.getElementById('annualExpense').value) || 0;
+
+            const yearsToRetire = retirementAge - currentAge;
+            const retirementDuration = lifeExpectancy - retirementAge;
+
+            // Calculate projected savings
+            let savings = currentSavings;
+            for (let i = 0; i < yearsToRetire; i++) {
+                savings = savings * (1 + returnRate) + annualSavings;
+            }
+
+            // Calculate retirement expense in today's dollars
+            const futureExpense = annualExpense * Math.pow(1 + inflationRate, yearsToRetire);
+            
+            // Calculate how much is needed (4% rule approximation)
+            const savingsNeeded = futureExpense * retirementDuration;
+            const surplus = savings - savingsNeeded;
+
+            document.getElementById('yearsToRetire').textContent = Math.max(0, yearsToRetire);
+            document.getElementById('savingsTarget').textContent = savingsNeeded.toFixed(2);
+            document.getElementById('projectedSavings').textContent = savings.toFixed(2);
+            document.getElementById('surplus').textContent = surplus.toFixed(2);
+            document.getElementById('duration').textContent = retirementDuration;
+            document.getElementById('results').classList.remove('hidden');
+            
+            drawRetirementChart(currentAge, retirementAge, lifeExpectancy, currentSavings, annualSavings, returnRate, savingsNeeded);
+        }
+
+        function drawRetirementChart(currentAge, retirementAge, lifeExpectancy, currentSavings, annualSavings, returnRate, target) {
+            const canvas = document.getElementById('retirementChart');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Calculate savings growth
+            const savingsPoints = [];
+            let savings = currentSavings;
+            for (let age = currentAge; age <= retirementAge; age++) {
+                savingsPoints.push(savings);
+                savings = savings * (1 + returnRate) + annualSavings;
+            }
+            
+            // Draw axes
+            const padding = 50;
+            const chartWidth = width - padding - 30;
+            const chartHeight = height - padding - 50;
+            
+            ctx.strokeStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(padding, 20);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - 30, height - padding);
+            ctx.stroke();
+            
+            // Scale
+            const maxSavings = Math.max(...savingsPoints, target) * 1.1;
+            const xScale = chartWidth / (savingsPoints.length - 1 || 1);
+            const yScale = chartHeight / (maxSavings || 1);
+            
+            // Draw target line
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            const targetY = height - padding - (target * yScale);
+            ctx.beginPath();
+            ctx.moveTo(padding, targetY);
+            ctx.lineTo(width - 30, targetY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw savings line
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            savingsPoints.forEach((val, i) => {
+                const x = padding + i * xScale;
+                const y = height - padding - val * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Fill under line
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.1)';
+            ctx.lineTo(width - 30, height - padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.fill();
+            
+            // Labels
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Retirement Savings Growth', width / 2, 15);
+            
+            ctx.font = '11px Arial';
+            for (let i = 0; i < savingsPoints.length; i += Math.ceil(savingsPoints.length / 6)) {
+                const age = currentAge + i;
+                const x = padding + i * xScale;
+                ctx.fillText(age, x, height - padding + 20);
+            }
+            
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 4; i++) {
+                const val = maxSavings * i / 4;
+                const y = height - padding - (val * yScale);
+                ctx.fillText('$' + (val / 1000).toFixed(0) + 'k', padding - 10, y + 5);
+            }
+            
+            // Legend
+            ctx.fillStyle = '#667eea';
+            ctx.fillRect(width - 220, 30, 10, 10);
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'left';
+            ctx.font = '11px Arial';
+            ctx.fillText('Projected Savings', width - 205, 38);
+            
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(width - 220, 50, 10, 10);
+            ctx.fillStyle = '#333';
+            ctx.fillText('Savings Target', width - 205, 58);
+        }
+
+        document.getElementById('currentAge').addEventListener('input', updateRetirement);
+        document.getElementById('retirementAge').addEventListener('input', updateRetirement);
+        document.getElementById('currentSavings').addEventListener('input', updateRetirement);
+        document.getElementById('annualSavings').addEventListener('input', updateRetirement);
+        document.getElementById('returnRate').addEventListener('input', updateRetirement);
+        document.getElementById('lifeExpectancy').addEventListener('input', updateRetirement);
+        document.getElementById('inflationRate').addEventListener('input', updateRetirement);
+        document.getElementById('annualExpense').addEventListener('input', updateRetirement);
+
+        updateRetirement();
+    </script>
+</body>
+</html>

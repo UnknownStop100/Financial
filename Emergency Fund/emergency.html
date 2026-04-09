@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Fund Calculator</title>
+    <link rel="stylesheet" href="../common.css">
+    <style>
+        .sidebar h1 { font-size: 1.3em; color: #667eea; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="nav-header">
+        <div>
+            <div class="page-title">Emergency Fund Calculator</div>
+            <div class="page-subtitle">Determine your emergency fund goal</div>
+        </div>
+        <a href="../main.html" class="back-btn">← Back to Calculators</a>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h1>Emergency Fund</h1>
+            <form id="emergencyForm">
+                <div class="input-group">
+                    <label for="monthlyExpenses">Monthly Expenses ($):</label>
+                    <input type="number" id="monthlyExpenses" step="0.01" value="5000">
+                </div>
+                <div class="input-group">
+                    <label for="months">Months of Coverage:</label>
+                    <select id="months">
+                        <option value="3">3 Months (Basic)</option>
+                        <option value="6" selected>6 Months (Recommended)</option>
+                        <option value="9">9 Months</option>
+                        <option value="12">12 Months (Conservative)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="currentFund">Current Emergency Fund ($):</label>
+                    <input type="number" id="currentFund" step="0.01" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="monthlyContribution">Monthly Contribution ($):</label>
+                    <input type="number" id="monthlyContribution" step="0.01" value="500">
+                </div>
+            </form>
+        </div>
+
+        <div class="main">
+            <canvas id="emergencyChart" width="600" height="300"></canvas>
+            <div id="results" class="results hidden">
+                <h2>Emergency Fund Analysis</h2>
+                <div class="result-item">
+                    <span class="label">Emergency Fund Goal:</span>
+                    <span class="value">$<span id="fundGoal">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Current Fund:</span>
+                    <span class="value">$<span id="currentAmount">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Amount Needed:</span>
+                    <span class="value">$<span id="amountNeeded">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Months to Goal:</span>
+                    <span class="value"><span id="monthsToGoal">0</span> months</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Emergency Coverage:</span>
+                    <span class="value"><span id="coverage">0</span> months</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateEmergency() {
+            const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value) || 0;
+            const months = parseInt(document.getElementById('months').value);
+            const currentFund = parseFloat(document.getElementById('currentFund').value) || 0;
+            const monthlyContribution = parseFloat(document.getElementById('monthlyContribution').value) || 0;
+
+            const fundGoal = monthlyExpenses * months;
+            const amountNeeded = Math.max(0, fundGoal - currentFund);
+            const monthsToGoal = monthlyContribution > 0 ? Math.ceil(amountNeeded / monthlyContribution) : 0;
+            const coverage = monthlyExpenses > 0 ? currentFund / monthlyExpenses : 0;
+
+            document.getElementById('fundGoal').textContent = fundGoal.toFixed(2);
+            document.getElementById('currentAmount').textContent = currentFund.toFixed(2);
+            document.getElementById('amountNeeded').textContent = amountNeeded.toFixed(2);
+            document.getElementById('monthsToGoal').textContent = monthsToGoal;
+            document.getElementById('coverage').textContent = coverage.toFixed(1);
+            document.getElementById('results').classList.remove('hidden');
+            
+            drawEmergencyChart(currentFund, fundGoal, monthlyContribution, monthsToGoal);
+        }
+
+        function drawEmergencyChart(current, goal, monthlyContrib, months) {
+            const canvas = document.getElementById('emergencyChart');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw progress bar
+            const barWidth = 300;
+            const barHeight = 35;
+            const barX = (width - barWidth) / 2;
+            const barY = height / 2 - 50;
+            
+            const progress = Math.min(current / goal, 1);
+            
+            // Background
+            ctx.fillStyle = '#e0e0e0';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+            
+            // Progress
+            ctx.fillStyle = '#667eea';
+            ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+            
+            // Border
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(barX, barY, barWidth, barHeight);
+            
+            // Percentage text
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText((progress * 100).toFixed(0) + '%', width / 2, barY + 24);
+            
+            // Labels
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Emergency Fund Progress', width / 2, 30);
+            
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Current: $' + current.toFixed(0), barX, barY - 10);
+            ctx.textAlign = 'right';
+            ctx.fillText('Goal: $' + goal.toFixed(0), barX + barWidth, barY - 10);
+            
+            // Timeline
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'center';
+            let balance = current;
+            const timelineY = height / 2 + 40;
+            const timelineSegments = Math.min(months + 1, 10);
+            const timelineX = barX;
+            const segmentWidth = barWidth / Math.max(timelineSegments - 1, 1);
+            
+            for (let i = 0; i < timelineSegments; i++) {
+                const x = timelineX + i * segmentWidth;
+                ctx.fillStyle = balance >= goal ? '#667eea' : '#ddd';
+                ctx.fillRect(x - 3, timelineY, 6, 6);
+                ctx.fillStyle = '#333';
+                ctx.fillText(i + 'm', x, timelineY + 20);
+                balance += monthlyContrib;
+            }
+            
+            // Legend info
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#333';
+            ctx.fillText('Months to Goal: ' + months, 60, height - 50);
+            ctx.fillText('Monthly Contribution: $' + monthlyContrib.toFixed(0), 60, height - 25);
+        }
+
+        document.getElementById('monthlyExpenses').addEventListener('input', updateEmergency);
+        document.getElementById('months').addEventListener('change', updateEmergency);
+        document.getElementById('currentFund').addEventListener('input', updateEmergency);
+        document.getElementById('monthlyContribution').addEventListener('input', updateEmergency);
+
+        updateEmergency();
+    </script>
+</body>
+</html>

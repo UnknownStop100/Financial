@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debt Payoff Calculator</title>
+    <link rel="stylesheet" href="../common.css">
+    <style>
+        .sidebar h1 { font-size: 1.3em; color: #667eea; margin-bottom: 15px; }
+        .debt-item { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .btn-add { background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="nav-header">
+        <div>
+            <div class="page-title">Debt Payoff Calculator</div>
+            <div class="page-subtitle">Snowball vs Avalanche strategy</div>
+        </div>
+        <a href="../main.html" class="back-btn">← Back to Calculators</a>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h1>Debts</h1>
+            <form id="debtForm">
+                <div class="input-group">
+                    <label for="strategy">Payment Strategy:</label>
+                    <select id="strategy">
+                        <option value="snowball">Snowball (Smallest First)</option>
+                        <option value="avalanche">Avalanche (Highest Rate First)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="monthlyPayment">Monthly Payment ($):</label>
+                    <input type="number" id="monthlyPayment" step="0.01" value="1000">
+                </div>
+                <h3 style="margin-top: 20px; color: #667eea;">Add Debts</h3>
+                <div id="debtsList"></div>
+                <button type="button" class="btn-add" onclick="addDebt()">+ Add Debt</button>
+            </form>
+        </div>
+
+        <div class="main">
+            <canvas id="debtChart" width="600" height="300"></canvas>
+            <div id="results" class="results hidden">
+                <h2>Debt Payoff Plan</h2>
+                <div class="result-item">
+                    <span class="label">Total Debt:</span>
+                    <span class="value">$<span id="totalDebt">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Monthly Payment:</span>
+                    <span class="value">$<span id="displayPayment">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Time to Debt Free:</span>
+                    <span class="value"><span id="timeToDebtFree">0</span> months</span>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Debt</th>
+                                <th>Balance</th>
+                                <th>Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="debtSummary"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let debtCount = 0;
+        const defaultDebts = [
+            { name: 'Credit Card 1', balance: 5000, rate: 18 },
+            { name: 'Credit Card 2', balance: 3000, rate: 20 },
+            { name: 'Personal Loan', balance: 10000, rate: 8 }
+        ];
+
+        function initDebts() {
+            const list = document.getElementById('debtsList');
+            list.innerHTML = '';
+            defaultDebts.forEach((debt, index) => {
+                addDebtItem(debt.name, debt.balance, debt.rate, index);
+            });
+            debtCount = defaultDebts.length;
+        }
+
+        function addDebtItem(name = '', balance = 0, rate = 0, index) {
+            const list = document.getElementById('debtsList');
+            const div = document.createElement('div');
+            div.className = 'debt-item';
+            div.id = `debt-${index}`;
+            div.innerHTML = `
+                <input type="text" placeholder="Name" value="${name}" class="debt-name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                <input type="number" placeholder="Balance" value="${balance}" step="0.01" class="debt-balance" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                <input type="number" placeholder="Interest Rate %" value="${rate}" step="0.01" class="debt-rate" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            `;
+            const inputs = div.querySelectorAll('input, select');
+            inputs.forEach(input => input.addEventListener('input', updateDebtPlan));
+            list.appendChild(div);
+        }
+
+        function addDebt() {
+            addDebtItem('', 0, 0, debtCount++);
+            updateDebtPlan();
+        }
+
+        function updateDebtPlan() {
+            const strategy = document.getElementById('strategy').value;
+            const monthlyPayment = parseFloat(document.getElementById('monthlyPayment').value) || 0;
+
+            const debts = [];
+            document.querySelectorAll('.debt-name').forEach((input, index) => {
+                const balance = parseFloat(document.querySelectorAll('.debt-balance')[index].value) || 0;
+                const rate = parseFloat(document.querySelectorAll('.debt-rate')[index].value) || 0;
+                debts.push({
+                    name: input.value || `Debt ${index + 1}`,
+                    balance: balance,
+                    rate: rate / 100 / 12
+                });
+            });
+
+            if (strategy === 'snowball') {
+                debts.sort((a, b) => a.balance - b.balance);
+            } else {
+                debts.sort((a, b) => b.rate - a.rate);
+            }
+
+            let totalDebt = debts.reduce((sum, d) => sum + d.balance, 0);
+            let months = 0;
+
+            const summaryHTML = debts.map(d => `
+                <tr>
+                    <td>${d.name}</td>
+                    <td>$${d.balance.toFixed(2)}</td>
+                    <td>${(d.rate * 12 * 100).toFixed(2)}%</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('totalDebt').textContent = totalDebt.toFixed(2);
+            document.getElementById('displayPayment').textContent = monthlyPayment.toFixed(2);
+            document.getElementById('debtSummary').innerHTML = summaryHTML;
+            
+            // Simple calculation of time to debt free
+            if (monthlyPayment > 0) {
+                months = Math.ceil(totalDebt / monthlyPayment);
+            }
+            document.getElementById('timeToDebtFree').textContent = months;
+            document.getElementById('results').classList.remove('hidden');
+            
+            drawDebtChart(debts, monthlyPayment, months);
+        }
+
+        function drawDebtChart(debts, monthlyPayment, months) {
+            const canvas = document.getElementById('debtChart');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Calculate debt reduction over time
+            const debtOverTime = [];
+            let currentDebts = debts.map(d => ({ ...d }));
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#ff6b6b', '#ffd93d'];
+            
+            let totalDebtNow = currentDebts.reduce((sum, d) => sum + d.balance, 0);
+            debtOverTime.push(totalDebtNow);
+            
+            for (let month = 1; month <= months; month++) {
+                // Apply interest
+                currentDebts.forEach(d => {
+                    d.monthlyInterest = d.balance * d.rate;
+                });
+                
+                let paymentRemaining = monthlyPayment;
+                
+                // Pay off in strategy order
+                for (let i = 0; i < currentDebts.length && paymentRemaining > 0; i++) {
+                    const interestPayment = currentDebts[i].monthlyInterest;
+                    const principalPayment = Math.min(paymentRemaining - interestPayment, currentDebts[i].balance);
+                    currentDebts[i].balance = Math.max(0, currentDebts[i].balance - principalPayment);
+                    paymentRemaining -= (interestPayment + principalPayment);
+                }
+                
+                totalDebtNow = currentDebts.reduce((sum, d) => sum + d.balance, 0);
+                debtOverTime.push(totalDebtNow);
+            }
+            
+            // Draw axes
+            const padding = 50;
+            const chartWidth = width - padding - 30;
+            const chartHeight = height - padding - 50;
+            
+            ctx.strokeStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(padding, 20);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - 30, height - padding);
+            ctx.stroke();
+            
+            // Scale
+            const maxDebt = Math.max(...debtOverTime);
+            const xScale = chartWidth / (debtOverTime.length - 1 || 1);
+            const yScale = chartHeight / (maxDebt ||1);
+            
+            // Draw line
+            ctx.stroke Style = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            debtOverTime.forEach((val, i) => {
+                const x = padding + i * xScale;
+                const y = height - padding - val * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Fill under line
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.1)';
+            ctx.lineTo(width - 30, height - padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.fill();
+            
+            // Labels
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Debt Reduction Over Time', width / 2, 15);
+            
+            ctx.font = '11px Arial';
+            const monthStep = Math.ceil(months / 6);
+            for (let i = 0; i <= months; i += monthStep) {
+                const x = padding + i * xScale;
+                ctx.fillText(i + 'm', x, height - padding + 20);
+            }
+            
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 4; i++) {
+                const val = maxDebt * i / 4;
+                const y = height - padding - (val * yScale);
+                ctx.fillText('$' + (val / 1000).toFixed(0) + 'k', padding - 10, y + 5);
+            }
+        }
+
+        document.getElementById('strategy').addEventListener('change', updateDebtPlan);
+        document.getElementById('monthlyPayment').addEventListener('input', updateDebtPlan);
+        initDebts();
+        updateDebtPlan();
+    </script>
+</body>
+</html>

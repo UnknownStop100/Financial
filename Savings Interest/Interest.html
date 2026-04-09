@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savings Interest Calculator</title>
+    <link rel="stylesheet" href="../common.css">
+    <link rel="stylesheet" href="interest.css">
+</head>
+<body>
+    <div class="nav-header">
+        <a href="../main.html" class="back-btn">← Back to Hub</a>
+        <h1 class="page-title">Savings Interest Calculator</h1>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <form id="interestForm">
+                <div class="input-group">
+                    <label for="principal">Principal Amount ($):</label>
+                    <input type="number" id="principal" step="0.01" required>
+                </div>
+                <div class="input-group">
+                    <label for="rate">Annual Interest Rate (%):</label>
+                    <input type="number" id="rate" step="0.01" required>
+                </div>
+                <div class="input-group">
+                    <label for="years">Number of Years:</label>
+                    <input type="number" id="years" required>
+                </div>
+                <div class="input-group">
+                    <label for="compounding">Compounding Frequency:</label>
+                    <select id="compounding">
+                        <option value="1">Annually</option>
+                        <option value="2">Semi-annually</option>
+                        <option value="4">Quarterly</option>
+                        <option value="12" selected>Monthly</option>
+                        <option value="365">Daily</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="contribution">Additional Contribution Amount ($):</label>
+                    <input type="number" id="contribution" step="0.01" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="contributionFreq">Contribution Frequency:</label>
+                    <select id="contributionFreq">
+                        <option value="1">Yearly</option>
+                        <option value="2">Semi-annually</option>
+                        <option value="4">Quarterly</option>
+                        <option value="12" selected>Monthly</option>
+                        <option value="365">Daily</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="main">
+            <canvas id="interestChart" width="600" height="300"></canvas>
+            <div id="results" class="results">
+                <h2>Results</h2>
+                <p>Amount Invested: $<span id="amountInvested">0.00</span></p>
+                <p>Final Amount: $<span id="finalAmount">0.00</span></p>
+                <p>Interest Earned: $<span id="interestEarned">0.00</span></p>
+            </div>
+        </div>
+    </div>
+    <script src="interest.js"></script>
+</body>
+</html>

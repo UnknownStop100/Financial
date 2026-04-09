@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inflation Calculator</title>
+    <link rel="stylesheet" href="../common.css">
+    <style>
+        .sidebar h1 { font-size: 1.3em; color: #667eea; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="nav-header">
+        <div>
+            <div class="page-title">Inflation Calculator</div>
+            <div class="page-subtitle">Calculate inflation impact on purchasing power</div>
+        </div>
+        <a href="../main.html" class="back-btn">← Back to Calculators</a>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h1>Inflation Analysis</h1>
+            <form id="inflationForm">
+                <div class="input-group">
+                    <label for="presentAmount">Present Amount ($):</label>
+                    <input type="number" id="presentAmount" step="0.01" value="100000">
+                </div>
+                <div class="input-group">
+                    <label for="inflationRate">Annual Inflation Rate (%):</label>
+                    <input type="number" id="inflationRate" step="0.01" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="years">Years in Future:</label>
+                    <input type="number" id="years" value="10">
+                </div>
+            </form>
+        </div>
+
+        <div class="main">
+            <canvas id="inflationChart" width="600" height="300"></canvas>
+            <div id="results" class="results hidden">
+                <h2>Inflation Impact</h2>
+                <div class="result-item">
+                    <span class="label">Present Value:</span>
+                    <span class="value">$<span id="presentValue">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Future Amount Needed:</span>
+                    <span class="value">$<span id="futureAmount">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Purchasing Power Loss:</span>
+                    <span class="value">$<span id="powerLoss">0.00</span></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Percent Decrease:</span>
+                    <span class="value"><span id="percentDecrease">0.00</span>%</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Real Value (Today's Dollars):</span>
+                    <span class="value">$<span id="realValue">0.00</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateInflation() {
+            const presentAmount = parseFloat(document.getElementById('presentAmount').value) || 0;
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100;
+            const years = parseFloat(document.getElementById('years').value) || 0;
+
+            const futureAmount = presentAmount * Math.pow(1 + inflationRate, years);
+            const powerLoss = futureAmount - presentAmount;
+            const percentDecrease = (powerLoss / futureAmount) * 100;
+            const realValue = presentAmount / Math.pow(1 + inflationRate, years);
+
+            document.getElementById('presentValue').textContent = presentAmount.toFixed(2);
+            document.getElementById('futureAmount').textContent = futureAmount.toFixed(2);
+            document.getElementById('powerLoss').textContent = powerLoss.toFixed(2);
+            document.getElementById('percentDecrease').textContent = percentDecrease.toFixed(2);
+            document.getElementById('realValue').textContent = realValue.toFixed(2);
+            document.getElementById('results').classList.remove('hidden');
+            
+            drawInflationChart(presentAmount, inflationRate, years);
+        }
+
+        function drawInflationChart(amount, rate, years) {
+            const canvas = document.getElementById('inflationChart');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Calculate values over time
+            const nominalValues = [];
+            const realValues = [];
+            let nominal = amount;
+            
+            for (let year = 0; year <= years; year++) {
+                nominal = amount * Math.pow(1 + rate, year);
+                const real = amount / Math.pow(1 + rate, year);
+                nominalValues.push(nominal);
+                realValues.push(real);
+            }
+            
+            // Draw axes
+            const padding = 50;
+            const chartWidth = width - padding - 30;
+            const chartHeight = height - padding - 50;
+            
+            ctx.strokeStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(padding, 20);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - 30, height - padding);
+            ctx.stroke();
+            
+            // Scale
+            const maxValue = Math.max(...nominalValues);
+            const xScale = chartWidth / (years || 1);
+            const yScale = chartHeight / (maxValue || 1);
+            
+            // Draw nominal line (purchasing power loss)
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            nominalValues.forEach((val, i) => {
+                const x = padding + i * xScale;
+                const y = height - padding - val * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw real value line
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            realValues.forEach((val, i) => {
+                const x = padding + i * xScale;
+                const y = height - padding - val * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Labels
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Inflation Impact Over Time', width / 2, 15);
+            
+            ctx.font = '11px Arial';
+            for (let i = 0; i <= years; i += Math.ceil(years / 5)) {
+                const x = padding + i * xScale;
+                ctx.fillText(i + 'y', x, height - padding + 20);
+            }
+            
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 4; i++) {
+                const val = maxValue * i / 4;
+                const y = height - padding - (val * yScale);
+                ctx.fillText('$' + (val / 1000).toFixed(0) + 'k', padding - 10, y + 5);
+            }
+            
+            // Legend
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(width - 240, 30, 10, 10);
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'left';
+            ctx.font = '11px Arial';
+            ctx.fillText('Amount Needed (Inflation)', width - 225, 38);
+            
+            ctx.fillStyle = '#667eea';
+            ctx.fillRect(width - 240, 50, 10, 10);
+            ctx.fillStyle = '#333';
+            ctx.fillText('Real Value (Today\'s Dollars)', width - 225, 58);
+        }
+
+        document.getElementById('presentAmount').addEventListener('input', updateInflation);
+        document.getElementById('inflationRate').addEventListener('input', updateInflation);
+        document.getElementById('years').addEventListener('input', updateInflation);
+
+        updateInflation();
+    </script>
+</body>
+</html>
