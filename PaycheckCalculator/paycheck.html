@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paycheck Calculator</title>
+    <link rel="stylesheet" href="paycheck.css">
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Paycheck Calculator</h1>
+        
+        <form id="paycheckForm">
+            <div class="form-group">
+                <label for="grossSalary">Gross Salary ($)</label>
+                <input type="number" step="0.01" id="grossSalary" placeholder="Enter annual salary" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="payFrequency">Pay Frequency</label>
+                <select id="payFrequency">
+                    <option value="annual">Annual</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="biweekly">Bi-weekly</option>
+                    <option value="weekly">Weekly</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="federalTax">Federal Tax Rate (%)</label>
+                <input type="number" step="0.01" id="federalTax" placeholder="12" value="12" min="0" max="100">
+            </div>
+            
+            <div class="form-group">
+                <label for="stateTax">State Tax Rate (%)</label>
+                <input type="number" step="0.01" id="stateTax" placeholder="5" value="5" min="0" max="100">
+            </div>
+            
+            <div class="form-group">
+                <label for="socialSecurity">Social Security (%)</label>
+                <input type="number" step="0.01" id="socialSecurity" placeholder="6.2" value="6.2" min="0" max="100">
+            </div>
+            
+            <div class="form-group">
+                <label for="medicare">Medicare (%)</label>
+                <input type="number" step="0.01" id="medicare" placeholder="1.45" value="1.45" min="0" max="100">
+            </div>
+            
+            <button type="submit">Calculate Paycheck</button>
+        </form>
+        
+        <div class="results" id="results">
+            <div class="result-row">
+                <span>Gross Pay:</span>
+                <span id="grossPay">$0.00</span>
+            </div>
+            <div class="result-row">
+                <span>Federal Tax:</span>
+                <span id="federalTaxAmount">-$0.00</span>
+            </div>
+            <div class="result-row">
+                <span>State Tax:</span>
+                <span id="stateTaxAmount">-$0.00</span>
+            </div>
+            <div class="result-row">
+                <span>Social Security:</span>
+                <span id="socialSecurityAmount">-$0.00</span>
+            </div>
+            <div class="result-row">
+                <span>Medicare:</span>
+                <span id="medicareAmount">-$0.00</span>
+            </div>
+            <div class="result-row total">
+                <span>Net Pay:</span>
+                <span id="netPay">$0.00</span>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="paycheck.js"></script>
+</body>
+</html>
