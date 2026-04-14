@@ -33,3 +33,29 @@ export function calculatePercent(value, percent){
 export function calculateMonthlyBudget(income, expenses){
     return income - expenses;
 }
+export function calculateSalary(hourlyWage, hoursPerWeek, weeksPerYear = 52){
+    const annualSalary = hourlyWage * hoursPerWeek * weeksPerYear;
+    const monthlySalary = annualSalary / 12;
+    const biweeklySalary = annualSalary / 26;
+    const weeklySalary = annualSalary / weeksPerYear;
+    return {
+        annual: annualSalary,
+        monthly: monthlySalary,
+        biweekly: biweeklySalary,
+        weekly: weeklySalary
+    };
+}
+export function calculateHourlyRate(annualSalary, hoursPerWeek, weeksPerYear = 52){
+    const totalHours = hoursPerWeek * weeksPerYear;
+    const hourlyWage = totalHours > 0 ? annualSalary / totalHours : 0;
+    const monthlySalary = annualSalary / 12;
+    const biweeklySalary = annualSalary / 26;
+    const weeklySalary = annualSalary / weeksPerYear;
+    return {
+        hourly: hourlyWage,
+        annual: annualSalary,
+        monthly: monthlySalary,
+        biweekly: biweeklySalary,
+        weekly: weeklySalary
+    };
+}
